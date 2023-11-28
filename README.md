@@ -19,5 +19,5 @@ git clone https://github.com/guzov-afk/sEMG-signals-acquisition.git
 cd sEMG-signals-acquisition
 
 2. Run the script using Python:
-```python
+```bash
 python sEMG_signals_acquisition.py
