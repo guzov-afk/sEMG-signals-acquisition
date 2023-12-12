@@ -65,22 +65,22 @@ Loads data for two classes related to the third arm movement. Divides the data i
 Include an example or describe how to use these methods in your project.
 
 ```python
-from loaddata import YourDataLoader
+from loadDataTB import loadData
 
 # Initialize the data loader
-data_loader = YourDataLoader("your_data_directory")
+data_loader = loadData("your_data_directory")
 
 # Load data for three arm classes
-data_loader.loadData_armthreeClasses()
+dataStore, labels = data_loader.loadData_armthreeClasses()
 
 # Load data for two leg movement classes
-data_loader.loadData_twoClasses_leg()
+dataStore, labels = data_loader.loadData_twoClasses_leg()
 
 # Load data for two classes related to the first arm movement
-data_loader.loadData_twoClasses_firstarmmovement()
+dataStore, labels = data_loader.loadData_twoClasses_firstarmmovement()
 
 # Load data for two classes related to the second arm movement
-data_loader.loadData_twoClasses_secondarmmovement()
+dataStore, labels = data_loader.loadData_twoClasses_secondarmmovement()
 
 # Load data for two classes related to the third arm movement
-data_loader.loadData_twoClasses_thirdarmmovement()
+dataStore, labels = data_loader.loadData_twoClasses_thirdarmmovement()
