@@ -12,7 +12,7 @@ Brief description of the script and its purpose.
 
 ## Installation
 
-1. Clone the repository:
+Clone the repository:
 
 ```bash
 git clone https://github.com/guzov-afk/sEMG-signals-acquisition.git
@@ -23,8 +23,8 @@ cd sEMG-signals-acquisition
 
 
 python sEMG_signals_acquisition.py
-
-# LoadData Module
+```
+# Load Module
 
 This module provides functionality for loading and preprocessing data for arm and leg movement classes.
 
