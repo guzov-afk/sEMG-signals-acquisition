@@ -2,159 +2,205 @@ import os
 import numpy as np
 
 
-class loadData():
-
-    def __init__(self,dataDirectory):
+class LoadData:
+    def __init__(self, dataDirectory, dc_offset=128):
         self.dataDirectory = dataDirectory
+        self.dc_offset = dc_offset
 
-    def load_data(self,filename):
-        data = np.load(filename)
-        return data
+    # ----------------- Utils -----------------
+    def load_data(self, filename):
+        return np.load(filename)
 
-    def loadData_armthreeClasses(self):
-            dataStore = []
-            labels = []
-            for filename in os.listdir(self.dataDirectory):
-                if filename.endswith('.npy'):
-                    file_data = self.load_data(os.path.join(self.dataDirectory, filename))
-                    parts = filename.split('_')
-                    print(parts)
-                    cl = parts[2]
-                    if cl == "0":
-                        channel1 = file_data[0].astype(int)-128
-                        channel2 = file_data[1].astype(int)-128
-                        channel3 = file_data[2].astype(int)-128
-                        channel4 = file_data[3].astype(int)-128
-                        channel5 = file_data[4].astype(int)-128
-                        channel6 = file_data[5].astype(int)-128
-                        channel7 = file_data[6].astype(int)-128
-                        channel8 = file_data[7].astype(int)-128
-                        lis = [channel1, channel2, channel3, channel4, channel5, channel6, channel7, channel8]
-                        dataStore.append(lis)
-                        labels.append(0)
-                    elif cl == "1":
-                        channel1 = file_data[0].astype(int)-128
-                        channel2 = file_data[1].astype(int)-128
-                        channel3 = file_data[2].astype(int)-128
-                        channel4 = file_data[3].astype(int)-128
-                        channel5 = file_data[4].astype(int)-128
-                        channel6 = file_data[5].astype(int)-128
-                        channel7 = file_data[6].astype(int)-128
-                        channel8 = file_data[7].astype(int)-128
-                        lis = [channel1, channel2, channel3, channel4, channel5, channel6, channel7, channel8]
-                        dataStore.append(lis)
-                        labels.append(1)
-                    elif cl == "2":
-                        channel1 = file_data[0].astype(int)-128
-                        channel2 = file_data[1].astype(int)-128
-                        channel3 = file_data[2].astype(int)-128
-                        channel4 = file_data[3].astype(int)-128
-                        channel5 = file_data[4].astype(int)-128
-                        channel6 = file_data[5].astype(int)-128
-                        channel7 = file_data[6].astype(int)-128
-                        channel8 = file_data[7].astype(int)-128
-                        lis = [channel1, channel2, channel3, channel4, channel5, channel6, channel7, channel8]
-                        dataStore.append(lis)
-                        labels.append(2)
-            return dataStore,labels
+    def _get_channels(self, file_data, n_channels=None):
+        if n_channels is None:
+            n_channels = file_data.shape[0]
 
-    def loadData_twoClasses_leg(self):
-            dataStore = []
-            labels = []
-            for filename in os.listdir(self.dataDirectory):
-                if filename.endswith('.npy'):
-                    file_data = self.load_data(os.path.join(self.dataDirectory, filename))
-                    parts = filename.split('_')
-                    print(parts)
-                    cl = parts[2]
-                    if cl == "3":
-                        channel1 = file_data[0].astype(int)-128
-                        channel2 = file_data[1].astype(int)-128
-                        channel3 = file_data[2].astype(int)-128
-                        channel4 = file_data[3].astype(int)-128
-                        lis = [channel1[:20480], channel2[:20480], channel3[:20480], channel4[:20480]]    # 0 to 40s
-                        dataStore.append(lis)
-                        labels.append(0)
-                        lis = [channel1[20480:40960], channel2[20480:40960], channel3[20480:40960], channel4[20480:40960]]    # 40 to 80s
-                        dataStore.append(lis)
-                        labels.append(1)
-            return dataStore,labels
+        channels = [
+            file_data[i].astype(int) - self.dc_offset
+            for i in range(n_channels)
+        ]
+        return channels
 
+    def _iter_npy_files(self):
+        for filename in os.listdir(self.dataDirectory):
+            if filename.endswith(".npy"):
+                full_path = os.path.join(self.dataDirectory, filename)
+                file_data = self.load_data(full_path)
+                parts = filename.split("_")
+                # ai deja acest print, îl păstrez pentru debug
+                print(parts)
+                yield filename, parts, file_data
 
-    def loadData_twoClasses_firstarmmovement(self):
-            dataStore = []
-            labels = []
-            for filename in os.listdir(self.dataDirectory):
-                if filename.endswith('.npy'):
-                    file_data = self.load_data(os.path.join(self.dataDirectory, filename))
-                    parts = filename.split('_')
-                    print(parts)
-                    cl = parts[2]
-                    if cl == "0":
-                        channel1 = file_data[0].astype(int)-128
-                        channel2 = file_data[1].astype(int)-128
-                        channel3 = file_data[2].astype(int)-128
-                        channel4 = file_data[3].astype(int)-128
-                        channel5 = file_data[4].astype(int)-128
-                        channel6 = file_data[5].astype(int)-128
-                        channel7 = file_data[6].astype(int)-128
-                        channel8 = file_data[7].astype(int)-128
-                        lis = [channel1[:15360], channel2[:15360], channel3[:15360], channel4[:15360], channel5[:15360], channel6[:15360], channel7[:15360], channel8[:15360]]    # 0s to 30s
-                        dataStore.append(lis)
-                        labels.append(0)
-                        lis = [channel1[15360:], channel2[15360:], channel3[15360:], channel4[15360:], channel5[15360:], channel6[15360:], channel7[15360:], channel8[15360:]]    # 30s to 60s
-                        dataStore.append(lis)
-                        labels.append(1)
-            return dataStore,labels
-
-    def loadData_twoClasses_secondarmmovement(self):
+    # ----------------- 3 classes, full arm -----------------
+    def loadData_armthreeClasses(self, n_channels=8, class_index_in_name=2):
+       
         dataStore = []
         labels = []
-        for filename in os.listdir(self.dataDirectory):
-            if filename.endswith('.npy'):
-                file_data = self.load_data(os.path.join(self.dataDirectory, filename))
-                parts = filename.split('_')
-                print(parts)
-                cl = parts[2]
-                if cl == "1":
-                    channel1 = file_data[0].astype(int)-128
-                    channel2 = file_data[1].astype(int)-128
-                    channel3 = file_data[2].astype(int)-128
-                    channel4 = file_data[3].astype(int)-128
-                    channel5 = file_data[4].astype(int)-128
-                    channel6 = file_data[5].astype(int)-128
-                    channel7 = file_data[6].astype(int)-128
-                    channel8 = file_data[7].astype(int)-128
-                    lis = [channel1[5120:15360], channel2[5120:15360], channel3[5120:15360], channel4[5120:15360], channel5[5120:15360], channel6[5120:15360], channel7[5120:15360], channel8[5120:15360]]    # 10s to 30s
-                    dataStore.append(lis)
-                    labels.append(0)
-                    lis = [channel1[20480:], channel2[20480:], channel3[20480:], channel4[20480:], channel5[20480:], channel6[20480:], channel7[20480:], channel8[20480:]]    # 40s to 60s
-                    dataStore.append(lis)
-                    labels.append(1)
-        return dataStore,labels
 
-    def loadData_twoClasses_thirdarmmovement(self):
+        class_map = {
+            "0": 0,
+            "1": 1,
+            "2": 2
+        }
+
+        for filename, parts, file_data in self._iter_npy_files():
+            if len(parts) <= class_index_in_name:
+                continue
+
+            cl = parts[class_index_in_name]
+            if cl in class_map:
+                channels = self._get_channels(file_data, n_channels=n_channels)
+                dataStore.append(channels)
+                labels.append(class_map[cl])
+
+        return dataStore, labels
+
+    # ----------------- 2 classes, leg movement -----------------
+    def loadData_twoClasses_leg(
+        self,
+        n_channels=4,
+        class_id="3",
+        class_index_in_name=2,
+        start_rest=0,
+        end_rest=20480,
+        start_fatigue=20480,
+        end_fatigue=40960
+    ):
+        
         dataStore = []
         labels = []
-        for filename in os.listdir(self.dataDirectory):
-            if filename.endswith('.npy'):
-                file_data = self.load_data(os.path.join(self.dataDirectory, filename))
-                parts = filename.split('_')
-                print(parts)
-                cl = parts[2]
-                if cl == "2":
-                    channel1 = file_data[0].astype(int)-128
-                    channel2 = file_data[1].astype(int)-128
-                    channel3 = file_data[2].astype(int)-128
-                    channel4 = file_data[3].astype(int)-128
-                    channel5 = file_data[4].astype(int)-128
-                    channel6 = file_data[5].astype(int)-128
-                    channel7 = file_data[6].astype(int)-128
-                    channel8 = file_data[7].astype(int)-128
-                    lis = [channel1[5120:15360], channel2[5120:15360], channel3[5120:15360], channel4[5120:15360], channel5[5120:15360], channel6[5120:15360], channel7[5120:15360], channel8[5120:15360]]    # 10s to 30s
-                    dataStore.append(lis)
-                    labels.append(0)
-                    lis = [channel1[20480:], channel2[20480:], channel3[20480:], channel4[20480:], channel5[20480:], channel6[20480:], channel7[20480:], channel8[20480:]]    # 40s to 60s
-                    dataStore.append(lis)
-                    labels.append(1)
-        return dataStore,labels
+
+        for filename, parts, file_data in self._iter_npy_files():
+            if len(parts) <= class_index_in_name:
+                continue
+
+            cl = parts[class_index_in_name]
+            if cl == class_id:
+                channels = self._get_channels(file_data, n_channels=n_channels)
+
+                
+                seg1 = [ch[start_rest:end_rest] for ch in channels]
+                dataStore.append(seg1)
+                labels.append(0)
+
+                
+                seg2 = [ch[start_fatigue:end_fatigue] for ch in channels]
+                dataStore.append(seg2)
+                labels.append(1)
+
+        return dataStore, labels
+
+    # ----------------- 2 classes, first arm movement -----------------
+    def loadData_twoClasses_firstarmmovement(
+        self,
+        n_channels=8,
+        class_id="0",
+        class_index_in_name=2,
+        start_class0=0,
+        end_class0=15360,
+        start_class1=15360,
+        end_class1=None
+    ):
+        
+        dataStore = []
+        labels = []
+
+        for filename, parts, file_data in self._iter_npy_files():
+            if len(parts) <= class_index_in_name:
+                continue
+
+            cl = parts[class_index_in_name]
+            if cl == class_id:
+                channels = self._get_channels(file_data, n_channels=n_channels)
+
+                # Class 0 segment
+                seg0 = [ch[start_class0:end_class0] for ch in channels]
+                dataStore.append(seg0)
+                labels.append(0)
+
+                # Class 1 segment (până la end_class1 sau până la final)
+                if end_class1 is None:
+                    seg1 = [ch[start_class1:] for ch in channels]
+                else:
+                    seg1 = [ch[start_class1:end_class1] for ch in channels]
+                dataStore.append(seg1)
+                labels.append(1)
+
+        return dataStore, labels
+
+    # ----------------- 2 classes, second arm movement -----------------
+    def loadData_twoClasses_secondarmmovement(
+        self,
+        n_channels=8,
+        class_id="1",
+        class_index_in_name=2,
+        # implicit: 10s–30s (5120–15360) vs 40s–60s (20480–end)
+        start_class0=5120,
+        end_class0=15360,
+        start_class1=20480,
+        end_class1=None
+    ):
+        
+        dataStore = []
+        labels = []
+
+        for filename, parts, file_data in self._iter_npy_files():
+            if len(parts) <= class_index_in_name:
+                continue
+
+            cl = parts[class_index_in_name]
+            if cl == class_id:
+                channels = self._get_channels(file_data, n_channels=n_channels)
+
+                
+                seg0 = [ch[start_class0:end_class0] for ch in channels]
+                dataStore.append(seg0)
+                labels.append(0)
+
+                
+                if end_class1 is None:
+                    seg1 = [ch[start_class1:] for ch in channels]
+                else:
+                    seg1 = [ch[start_class1:end_class1] for ch in channels]
+                dataStore.append(seg1)
+                labels.append(1)
+
+        return dataStore, labels
+
+    # ----------------- 2 classes, third arm movement -----------------
+    def loadData_twoClasses_thirdarmmovement(
+        self,
+        n_channels=8,
+        class_id="2",
+        class_index_in_name=2,
+        start_class0=5120,
+        end_class0=15360,
+        start_class1=20480,
+        end_class1=None
+    ):
+        
+        dataStore = []
+        labels = []
+
+        for filename, parts, file_data in self._iter_npy_files():
+            if len(parts) <= class_index_in_name:
+                continue
+
+            cl = parts[class_index_in_name]
+            if cl == class_id:
+                channels = self._get_channels(file_data, n_channels=n_channels)
+
+                # Class 0 segment
+                seg0 = [ch[start_class0:end_class0] for ch in channels]
+                dataStore.append(seg0)
+                labels.append(0)
+
+                # Class 1 segment
+                if end_class1 is None:
+                    seg1 = [ch[start_class1:] for ch in channels]
+                else:
+                    seg1 = [ch[start_class1:end_class1] for ch in channels]
+                dataStore.append(seg1)
+                labels.append(1)
+
+        return dataStore, labels
