@@ -1,6 +1,6 @@
 from   PyQt5.QtWidgets  import  *
 from   PyQt5.QtGui      import  *
-from   PyQt5.QtCore     import  QTimer, QEventLoop, QThread, QThreadPool, QMutex, pyqtSignal, pyqtSlot  # Components necessary for Threading
+from   PyQt5.QtCore     import  QTimer, QTime, QEventLoop, QThread, QThreadPool, QMutex, pyqtSignal, pyqtSlot  # Components necessary for Threading
 from   pyqtgraph        import  PlotWidget, plot                                    # GUI Libraries
 from   pyqtgraph.Qt     import  QtGui, QtCore      
 
@@ -169,6 +169,19 @@ class Window(QMainWindow):
         self.label_channel_number.setFont(QFont('Arial',12))
         self.label_connected.setFont(QFont('Arial',12))
         
+        # widget for displaying remaining time
+
+        # Initialize the countdown time - record_duration has no user data here
+        self.time_left = 3
+
+        # Set up the label to display the countdown
+        self.label_timer = QLabel(self.format_time(self.time_left), self)
+        self.label_timer.setFont(QFont('Arial',12))
+        self.label_timer.setFixedWidth(200)
+
+        #QTimer to update the countdown every second
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_countdown)
 
         # widget for displaying the gesture performed
 
@@ -211,6 +224,7 @@ class Window(QMainWindow):
         self.record_duration         = QLineEdit("3")                               # creating a line edit widget
         self.record_duration.setFont(QFont('Arial', 12))
         self.record_duration.textChanged[str].connect(self.set_record_duration)
+        
         
         self.record_name             = QLineEdit("File Name")                       # creating a line edit widget
         self.record_name.setFont(QFont('Arial', 12))
@@ -337,13 +351,18 @@ class Window(QMainWindow):
              
     def record(self, checked):
         if checked == True:
-            print("Signal Acquisition Started!") 
+            print("Signal Acquisition Started!")
             self.record_button.setEnabled(False)            # disable button during acquisition
             self.record_button.setText("Recording Data...")
             # init the number of packets to be recorded, given the user input    
             self.record_status          = True
-            self.record_counter_sgn.emit(int(sample_rate * self.record_duration / sliding_window))
+            try: # If record_duration is not changed at least once a QLineEdit obj is passed
+                self.record_counter_sgn.emit(int(sample_rate * self.record_duration / sliding_window))
+            except TypeError:
+                self.set_record_duration(self.record_duration.text())
+                self.record_counter_sgn.emit(int(sample_rate * self.record_duration / sliding_window))
             self.record_on_sgn.emit(self.record_status)
+            self.start_countdown(self.record_duration) # Starts dispalyed timer countdown
 
     
     def record_done(self, done_flag):
@@ -415,7 +434,30 @@ class Window(QMainWindow):
         elif(gesture_number == 4):
             self.label_arrow.setPixmap(self.gesture_4_sign)
             #servo_con.write("4".encode())
+    
+    def format_time(self, time_in_seconds):
+        # Formats time as mm:ss
+        return QTime(0, 0).addSecs(time_in_seconds).toString('mm:ss')
 
+    def start_countdown(self, record_duration):
+        # Starts the countdown when the button is pressed
+        self.time_left = self.record_duration  # Reset time left to the initial value
+        # If the time is not changed at least one the set_record_duration is not called and a QLineEdit() is passed
+        try:
+            self.label_timer.setText(self.format_time(self.time_left))  # Display the initial time
+        except TypeError:
+            self.set_record_duration(self.record_duration.text())
+            self.label_timer.setText(self.format_time(self.time_left))
+        self.timer.start(1000)  # Start the timer
+
+    def update_countdown(self):
+        # Updates the countdown every second
+        if self.time_left > 0:
+            self.time_left -= 1
+            self.label_timer.setText(self.format_time(self.time_left))
+        else:
+            self.timer.stop()  # Stop the timer once countdown finishes
+            self.label_timer.setText("Time's up!")
 
 #---------------------------------------------------
 # Packet Retriever Thread
